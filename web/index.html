@@ -1,0 +1,14 @@
+<html>
+<head>
+<title>Traffic Editor III</title>
+</head>
+<body style="background-color: black;">
+<script type="module">
+  import init from "./libtraffic_editor_iii.js";
+  document.addEventListener('contextmenu', function(evt) { evt.preventDefault(); });
+  init("./libtraffic_editor_iii_bg.wasm").then(function (wasm) {
+    wasm.run();
+  });
+</script>
+</body>
+</html>
