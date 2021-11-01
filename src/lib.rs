@@ -409,6 +409,15 @@ pub fn run() {
 
     #[cfg(target_arch = "wasm32")]
     App::new()
+        .insert_resource(WindowDescriptor {
+            title: "Traffic Editor III".to_string(),
+            width: 400.,
+            //height: 720.,
+            //canvas: "te3_canvas".to_string(),
+            canvas: Some(String::from("#te3_canvas")),
+            //vsync: false,
+            ..Default::default()
+        })
         .add_plugins(PipelinedDefaultPlugins)
         .insert_resource( DirectionalLightShadowMap {
             size: 2048
