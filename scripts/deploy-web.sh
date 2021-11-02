@@ -1,5 +1,5 @@
 #!/bin/bash
-git clone ssh://git@github.com/codebot/traffic_editor_iii temp-deploy-checkout
+git clone ssh://git@github.com/open-rmf/traffic_editor_iii temp-deploy-checkout
 cd temp-deploy-checkout
 git checkout --orphan gh-pages
 git reset
