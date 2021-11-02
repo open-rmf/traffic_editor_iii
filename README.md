@@ -38,6 +38,13 @@ cargo run --release
 ```
 
 # WASM stuff
+
+Dependencies:
+```
+cargo install wasm-bindgen-cli
+cargo install basic-http-server
+```
+
 At time of writing, the latest wgpu (v0.11) can support WebGL2. At time of writing, this requires the local clones and slight tweaks to the forks described above, but once this is setup, it's quite magical:
 ```
 cargo build --target wasm32-unknown-unknown --release

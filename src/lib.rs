@@ -15,7 +15,7 @@ use bevy::{
         mesh::{shape, Mesh},
         //view::Msaa
     },
-    window::WindowDescriptor,
+    window::{WindowDescriptor, WindowMode},
 };
 use wasm_bindgen::prelude::*;
 
@@ -415,6 +415,7 @@ pub fn run() {
             //height: 720.,
             //canvas: "te3_canvas".to_string(),
             canvas: Some(String::from("#te3_canvas")),
+            //mode: WindowMode::BorderlessFullscreen,
             //vsync: false,
             ..Default::default()
         })
