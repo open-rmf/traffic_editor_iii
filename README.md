@@ -21,7 +21,7 @@ Alternatively, if you already have a Rust installation managed by `rustup`, you 
 
 Next, install some dependencies and the source:
 ```
-sudo apt install lld libxcb-shape0-dev libxcb-xfixes0-dev
+sudo apt install lld libxcb-shape0-dev libxcb-xfixes0-dev binaryen
 git clone ssh://git@github.com/open-rmf/traffic_editor_iii
 cd traffic_editor_iii
 cargo build --release
