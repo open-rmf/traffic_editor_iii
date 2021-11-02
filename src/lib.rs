@@ -1,5 +1,5 @@
 use bevy::{
-    core::Time,
+    core::{FixedTimestep, Time},
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     ecs::prelude::*,
     math::{Vec2, Vec3},
@@ -15,9 +15,11 @@ use bevy::{
         mesh::{shape, Mesh},
         //view::Msaa
     },
-    window::{WindowDescriptor, WindowMode},
+    window::{WindowDescriptor, Windows},
 };
 use wasm_bindgen::prelude::*;
+
+extern crate web_sys;
 
 // todo: use asset-server or something more sophisticated eventually.
 // for now, just hack it up and toss the office-demo YAML into a big string
@@ -404,6 +406,22 @@ fn setup(
     });
 }
 
+#[cfg(target_arch = "wasm32")]
+fn check_browser_window_size(mut windows: ResMut<Windows>) {
+    let mut window = windows.get_primary_mut().unwrap();
+    let wasm_window = web_sys::window().unwrap();
+    let target_width = wasm_window.inner_width().unwrap().as_f64().unwrap() as f32;
+    let target_height = wasm_window.inner_height().unwrap().as_f64().unwrap() as f32;
+    let w_diff = (target_width - window.width()).abs();
+    let h_diff = (target_height - window.height()).abs();
+    // web_sys::console::log_1(&format!("diffs: {} {}", w_diff, h_diff).into());
+
+    if w_diff > 3. || h_diff > 3. {
+        web_sys::console::log_1(&format!("window = {} {} canvas = {} {}", window.width(), window.height(), target_width, target_height).into());
+        window.set_resolution(target_width, target_height);
+    }
+}
+
 #[wasm_bindgen]
 pub fn run() {
 
@@ -411,11 +429,7 @@ pub fn run() {
     App::new()
         .insert_resource(WindowDescriptor {
             title: "Traffic Editor III".to_string(),
-            width: 400.,
-            //height: 720.,
-            //canvas: "te3_canvas".to_string(),
             canvas: Some(String::from("#te3_canvas")),
-            //mode: WindowMode::BorderlessFullscreen,
             //vsync: false,
             ..Default::default()
         })
@@ -430,6 +444,11 @@ pub fn run() {
         .add_system(handle_keyboard.system())
         .add_plugin(EguiPlugin)
         .add_system(egui_ui.system())
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(0.5))
+                .with_system(check_browser_window_size.system())
+            )
         .run();
 
     #[cfg(not(target_arch = "wasm32"))]

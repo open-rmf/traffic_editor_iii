@@ -1,5 +1,6 @@
 <html>
 <head>
+  <meta charset="utf-8">
   <title>Traffic Editor III</title>
   <style>
     body {
@@ -11,7 +12,10 @@
     }
     canvas {
       background-color: #401010;
+      /*
       width: 100%;
+      height: 100%;
+      */
     }
   </style>
 </head>
@@ -20,7 +24,18 @@
 </canvas>
 <script type="module">
   import init from "./libtraffic_editor_iii.js";
+
   document.addEventListener('contextmenu', function(evt) { evt.preventDefault(); });
+  resize_canvas();
+  window.addEventListener('resize', resize_canvas);
+
+  function resize_canvas() {
+    let canvas = document.getElementById("te3_canvas");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    console.log('canvas size: ' + canvas.width + ' ' + canvas.height);
+  }
+
   init("./libtraffic_editor_iii_bg.wasm").then(function (wasm) {
     wasm.run();
   });
