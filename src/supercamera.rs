@@ -24,6 +24,8 @@ use bevy::{
             WindowOrigin,
         },
         color::Color,
+        primitives::Frustum,
+        view::VisibleEntities,
     },
     window::{CursorMoved, Windows},
 };
@@ -87,6 +89,14 @@ impl CameraProjection for FlexibleProjection {
             return self.orthographic.depth_calculation();
         }
     }
+
+    fn far(&self) -> f32 {
+        if self.mode == ProjectionMode::Perspective {
+            return self.perspective.far;
+        } else {
+            return self.orthographic.far;
+        }
+    }
 }
 
 impl FlexibleProjection {
@@ -101,23 +111,53 @@ pub struct SuperCameraBundle {
     pub camera: Camera,
     pub flexible_projection: FlexibleProjection,
     pub initial_position: Vec3,
+    pub visible_entities: VisibleEntities,
+    pub frustum: Frustum,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
 }
 
 impl Default for SuperCameraBundle {
     fn default() -> Self {
+        let flexible_projection = FlexibleProjection { ..Default::default() };
+        let view_projection = flexible_projection.get_projection_matrix();
+        let frustum = Frustum::from_view_projection(
+            &view_projection,
+            &Vec3::ZERO,
+            &Vec3::Z,
+            flexible_projection.far(),
+        );
+
         SuperCameraBundle {
             camera: Camera {
                 name: Some(CameraPlugin::CAMERA_3D.to_string()),
                 ..Default::default()
             },
-            flexible_projection: Default::default(),
+            flexible_projection,
             initial_position: Default::default(),
+            visible_entities: VisibleEntities::default(),
+            frustum,
             transform: Default::default(),
             global_transform: Default::default(),
         }
     }
+}
+
+// because the SuperCamera has its own projection object, we have to update the
+// frustum ourselves in this plugin; the default update_frusta() function won't
+// get called because the type is different.
+
+pub fn update_frustum(
+    mut query: Query<(&GlobalTransform, &FlexibleProjection, &mut Frustum)>,
+) {
+    let (transform, projection, mut frustum) = query.single_mut();
+    let view_projection = projection.get_projection_matrix() * transform.compute_matrix().inverse();
+    *frustum = Frustum::from_view_projection(
+        &view_projection,
+        &transform.translation,
+        &transform.back(),
+        projection.far()
+    );
 }
 
 struct MouseLocation {
@@ -282,8 +322,8 @@ fn supercamera_setup(
     println!("supercamera_setup()");
     let mut cam = SuperCameraBundle::default();
     // todo: calculate camera scale based on window size and map size, etc.
-    cam.flexible_projection.orthographic.scale = 100.0;
-    let start_z = 200.;
+    cam.flexible_projection.orthographic.scale = 10.0;
+    let start_z = 20.;
     cam.flexible_projection.orbit_radius = start_z;
     cam.initial_position = Vec3::new(0., 0., start_z);
     cam.transform = Transform::from_translation(cam.initial_position).looking_at(Vec3::ZERO, Vec3::Y);
@@ -298,7 +338,8 @@ impl Plugin for SuperCameraPlugin {
         app.init_resource::<MouseLocation>()
            .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
            .add_startup_system(supercamera_setup.system())
-           .add_system(supercamera_motion);
+           .add_system(supercamera_motion)
+           .add_system(update_frustum);
 
         app.register_type::<Camera>()
             .add_system_to_stage(

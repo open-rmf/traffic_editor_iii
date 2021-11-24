@@ -167,10 +167,12 @@ impl SiteMap {
             )
         );
 
+        let vertex_material_handle = materials.add(Color::rgb(0.4, 0.7, 0.6).into());
+
         for v in &self.vertices {
             commands.spawn_bundle(PbrBundle {
                 mesh: vertex_handle.clone(),
-                material: materials.add(Color::rgb(0.4, 0.7, 0.6).into()),
+                material: vertex_material_handle.clone(),
                 transform: Transform {
                     translation: Vec3::new(
                         ((v.x - ofs_x) * scale) as f32,
@@ -183,6 +185,8 @@ impl SiteMap {
                 ..Default::default()
             });
         }
+
+        let lane_material_handle = materials.add(Color::rgba(1.0, 0.5, 0.3, 0.5).into());
 
         let mut z_ofs = 0.01;
         for lane in &self.lanes {
@@ -203,7 +207,7 @@ impl SiteMap {
 
             commands.spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::from([length, width])))),
-                material: materials.add(Color::rgba(1.0, 0.5, 0.3, 0.5).into()),
+                material: lane_material_handle.clone(),
                 transform: Transform {
                     translation: Vec3::new(cx, cy, z_ofs),
                     rotation: Quat::from_rotation_z(yaw),
@@ -213,6 +217,8 @@ impl SiteMap {
             });
             z_ofs += 0.001;  // avoid flicker
         }
+
+        let wall_material_handle = materials.add(Color::rgb(0.5, 0.5, 1.0).into());
 
         for wall in &self.walls {
             let v1 = &self.vertices[wall.start];
@@ -233,7 +239,7 @@ impl SiteMap {
 
             commands.spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Box::new(length, width, height))),
-                material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
+                material: wall_material_handle.clone(),
                 transform: Transform {
                     translation: Vec3::new(cx, cy, height / 2.),
                     rotation: Quat::from_rotation_z(yaw),

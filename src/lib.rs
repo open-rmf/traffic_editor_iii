@@ -1,13 +1,25 @@
 use bevy::{
-    core::{FixedTimestep, Time},
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    core::{
+        FixedTimestep,
+        //Time
+    },
+    // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     ecs::prelude::*,
-    math::{Quat, Vec3},
-    prelude::{App, Assets, AssetServer, Transform},
-    pbr2::{PbrBundle, AmbientLight, /*PointLightBundle, PointLight,*/ StandardMaterial, DirectionalLightBundle, DirectionalLight},
-    PipelinedDefaultPlugins,
-    input::keyboard::KeyCode,
     input::Input,
+    input::keyboard::KeyCode,
+    math::{Quat, Vec3},
+    pbr2::{
+        AmbientLight,
+        DirectionalLight,
+        DirectionalLightBundle,
+        DirectionalLightShadowMap,
+        PbrBundle,
+        // PointLightBundle,
+        // PointLight,
+        StandardMaterial,
+    },
+    prelude::{App, Assets, AssetServer, Transform},
+    PipelinedDefaultPlugins,
     render2::{
         camera::OrthographicProjection,
         color::Color,
@@ -132,17 +144,8 @@ fn setup(
     const HALF_SIZE: f32 = 1.;
     commands.spawn_bundle(DirectionalLightBundle {
         directional_light: DirectionalLight {
-            shadow_projection: OrthographicProjection {
-                left: -HALF_SIZE,
-                right: HALF_SIZE,
-                bottom: -HALF_SIZE,
-                top: HALF_SIZE,
-                near: -10. * HALF_SIZE,
-                far: 10. * HALF_SIZE,
-                ..Default::default()
-            },
-            color: Color::rgb(1., 1., 1.),
-            illuminance: 10000.,
+            shadows_enabled: false,
+            illuminance: 20000.,
             ..Default::default()
         },
         transform: Transform {
@@ -183,15 +186,15 @@ pub fn run() {
         })
         .add_plugins(PipelinedDefaultPlugins)
         .insert_resource( DirectionalLightShadowMap {
-            size: 2048
+            size: 1024
         })
         .init_resource::<SiteMap>()
         .add_plugin(SuperCameraPlugin)
         .add_startup_system(setup.system())
         .add_startup_system(initialize_site_map.system())
         .add_system(handle_keyboard.system())
-        .add_plugin(EguiPlugin)
-        .add_system(egui_ui.system())
+        //.add_plugin(EguiPlugin)
+        //.add_system(egui_ui.system())
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(0.5))
@@ -208,9 +211,12 @@ pub fn run() {
             //vsync: false,
             ..Default::default()
         })
+        .insert_resource( DirectionalLightShadowMap {
+            size: 2048
+        })
         .add_plugins(PipelinedDefaultPlugins)
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(LogDiagnosticsPlugin::default())
+        //.add_plugin(FrameTimeDiagnosticsPlugin::default())
+        //.add_plugin(LogDiagnosticsPlugin::default())
         //.insert_resource(Msaa { samples: 4})
         .init_resource::<SiteMap>()
         .add_plugin(SuperCameraPlugin)
