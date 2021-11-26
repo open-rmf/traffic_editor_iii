@@ -345,7 +345,7 @@ impl Plugin for SuperCameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MouseLocation>()
            .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-           .add_startup_system(supercamera_setup.system())
+           .add_startup_system(supercamera_setup)
            .add_system(supercamera_motion)
            .add_system(update_frustum);
 

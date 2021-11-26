@@ -1,8 +1,4 @@
 use bevy::{
-    core::{
-        FixedTimestep,
-        //Time
-    },
     // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     ecs::prelude::*,
     input::Input,
@@ -21,14 +17,23 @@ use bevy::{
     prelude::{App, Assets, AssetServer, Transform},
     PipelinedDefaultPlugins,
     render2::{
-        camera::OrthographicProjection,
         color::Color,
         mesh::{shape, Mesh},
         //view::Msaa
     },
-    window::{WindowDescriptor, Windows},
+    window::{WindowDescriptor},
 };
 use wasm_bindgen::prelude::*;
+
+// a few more imports needed for wasm32 only
+#[cfg(target_arch = "wasm32")]
+use bevy::{
+    core::{
+        FixedTimestep,
+        //Time
+    },
+    window::{Windows},
+};
 
 extern crate web_sys;
 mod demo_world;
@@ -39,7 +44,7 @@ mod supercamera;
 use supercamera::{SuperCameraPlugin, FlexibleProjection, ProjectionMode};
 
 mod site_map;
-use site_map::{initialize_site_map, SiteMap, SiteMapPlugin};
+use site_map::{SiteMap, SiteMapPlugin};
 
 
 fn handle_keyboard(
@@ -141,7 +146,6 @@ fn setup(
         brightness: 0.001,
     });
 
-    const HALF_SIZE: f32 = 1.;
     commands.spawn_bundle(DirectionalLightBundle {
         directional_light: DirectionalLight {
             shadows_enabled: false,
@@ -189,16 +193,15 @@ pub fn run() {
             size: 1024
         })
         .add_plugin(SuperCameraPlugin)
-        .add_startup_system(setup.system())
-        .add_startup_system(initialize_site_map.system())
+        .add_startup_system(setup)
         .add_plugin(SiteMapPlugin)
-        .add_system(handle_keyboard.system())
+        .add_system(handle_keyboard)
         .add_plugin(EguiPlugin)
-        .add_system(egui_ui.system())
+        .add_system(egui_ui)
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(0.5))
-                .with_system(check_browser_window_size.system())
+                .with_system(check_browser_window_size)
             )
         .run();
 
@@ -219,10 +222,10 @@ pub fn run() {
         //.add_plugin(LogDiagnosticsPlugin::default())
         //.insert_resource(Msaa { samples: 4})
         .add_plugin(SuperCameraPlugin)
-        .add_startup_system(setup.system())
+        .add_startup_system(setup)
         .add_plugin(SiteMapPlugin)
-        .add_system(handle_keyboard.system())
+        .add_system(handle_keyboard)
         .add_plugin(EguiPlugin)
-        .add_system(egui_ui.system())
+        .add_system(egui_ui)
         .run();
 }
