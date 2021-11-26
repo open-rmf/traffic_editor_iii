@@ -39,7 +39,7 @@ mod supercamera;
 use supercamera::{SuperCameraPlugin, FlexibleProjection, ProjectionMode};
 
 mod site_map;
-use site_map::{initialize_site_map, SiteMap};
+use site_map::{initialize_site_map, SiteMap, SiteMapPlugin};
 
 
 fn handle_keyboard(
@@ -188,13 +188,13 @@ pub fn run() {
         .insert_resource( DirectionalLightShadowMap {
             size: 1024
         })
-        .init_resource::<SiteMap>()
         .add_plugin(SuperCameraPlugin)
         .add_startup_system(setup.system())
         .add_startup_system(initialize_site_map.system())
+        .add_plugin(SiteMapPlugin)
         .add_system(handle_keyboard.system())
-        //.add_plugin(EguiPlugin)
-        //.add_system(egui_ui.system())
+        .add_plugin(EguiPlugin)
+        .add_system(egui_ui.system())
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(0.5))
@@ -218,10 +218,9 @@ pub fn run() {
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         //.add_plugin(LogDiagnosticsPlugin::default())
         //.insert_resource(Msaa { samples: 4})
-        .init_resource::<SiteMap>()
         .add_plugin(SuperCameraPlugin)
         .add_startup_system(setup.system())
-        .add_startup_system(initialize_site_map.system())
+        .add_plugin(SiteMapPlugin)
         .add_system(handle_keyboard.system())
         .add_plugin(EguiPlugin)
         .add_system(egui_ui.system())

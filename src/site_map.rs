@@ -2,7 +2,7 @@ use bevy::{
     ecs::prelude::*,
     math::{Quat, Vec2, Vec3},
     pbr2::{PbrBundle, StandardMaterial},
-    prelude::{App, Assets, AssetServer, Transform},
+    prelude::{App, Assets, AssetServer, Plugin, Transform},
     render2::{
         color::Color,
         mesh::{shape, Mesh},
@@ -267,5 +267,15 @@ pub fn initialize_site_map(
     } else {
         sm.load_demo();
         sm.spawn(commands, meshes, materials, asset_server);
+    }
+}
+
+#[derive(Default)]
+pub struct SiteMapPlugin;
+
+impl Plugin for SiteMapPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<SiteMap>()
+           .add_startup_system(initialize_site_map);
     }
 }

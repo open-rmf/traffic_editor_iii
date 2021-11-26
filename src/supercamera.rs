@@ -42,8 +42,8 @@ pub enum ProjectionMode { Perspective, Orthographic }
 pub struct FlexibleProjection {
     pub mode: ProjectionMode,
     mode_switched: bool,
-    perspective: PerspectiveProjection,
-    orthographic: OrthographicProjection,
+    persp: PerspectiveProjection,
+    ortho: OrthographicProjection,
     orbit_center: Vec3,
     orbit_radius: f32,
     orbit_upside_down: bool,
@@ -54,8 +54,8 @@ impl Default for FlexibleProjection {
         FlexibleProjection {
             mode: ProjectionMode::Orthographic,
             mode_switched: true,
-            perspective: Default::default(),
-            orthographic: OrthographicProjection {
+            persp: Default::default(),
+            ortho: OrthographicProjection {
                 window_origin: WindowOrigin::Center,
                 scaling_mode: ScalingMode::FixedVertical,
                 scale: 10.0,
@@ -71,30 +71,30 @@ impl Default for FlexibleProjection {
 impl CameraProjection for FlexibleProjection {
     fn get_projection_matrix(&self) -> Mat4 {
         if self.mode == ProjectionMode::Perspective {
-            return self.perspective.get_projection_matrix();
+            return self.persp.get_projection_matrix();
         } else {
-            return self.orthographic.get_projection_matrix();
+            return self.ortho.get_projection_matrix();
         }
     }
 
     fn update(&mut self, width: f32, height: f32) {
-        self.perspective.update(width, height);
-        self.orthographic.update(width, height);
+        self.persp.update(width, height);
+        self.ortho.update(width, height);
     }
 
     fn depth_calculation(&self) -> DepthCalculation {
         if self.mode == ProjectionMode::Perspective {
-            return self.perspective.depth_calculation();
+            return self.persp.depth_calculation();
         } else {
-            return self.orthographic.depth_calculation();
+            return self.ortho.depth_calculation();
         }
     }
 
     fn far(&self) -> f32 {
         if self.mode == ProjectionMode::Perspective {
-            return self.perspective.far;
+            return self.persp.far;
         } else {
-            return self.orthographic.far;
+            return self.ortho.far;
         }
     }
 }
@@ -224,36 +224,44 @@ fn supercamera_motion(
       scroll = scroll * 0.1; // not sure why, but web scrolling seems SO FAST
     }
 
-    let (_camera, mut transform, mut projection, initial_position) = query.single_mut();
+    let (
+        _camera,
+        mut transform,
+        mut proj,
+        initial_position
+    ) = query.single_mut();
 
-    if projection.mode_switched {
-        projection.mode_switched = false;
+    if proj.mode_switched {
+        proj.mode_switched = false;
         transform.translation = initial_position.clone();
         transform.rotation = Quat::default();
         /*
-        if projection.mode == ProjectionMode::Perspective {
-            transform.translation.z = projection.orbit_radius;
+        if proj.mode == ProjectionMode::Perspective {
+            transform.translation.z = proj.orbit_radius;
             println!("set transform translation to {}", transform.translation);
         }
         */
     }
 
-    if projection.mode == ProjectionMode::Orthographic {
+    if proj.mode == ProjectionMode::Orthographic {
+        let window = windows.get_primary().unwrap();
+        let window_size = Vec2::new(
+            window.width() as f32,
+            window.height() as f32);
+        let aspect_ratio = window_size[0] / window_size[1];
+
         if cursor_motion.length_squared() > 0.0 {
-            let window = windows.get_primary().unwrap();
-            let window_size = Vec2::new(window.width() as f32, window.height() as f32);
-            let aspect_ratio = window_size[0] / window_size[1];
             cursor_motion *= 2. / window_size * Vec2::new(
-                projection.orthographic.scale * aspect_ratio,
-                projection.orthographic.scale
+                proj.ortho.scale * aspect_ratio,
+                proj.ortho.scale
             );
             let right = -cursor_motion.x * Vec3::X;
             let up = -cursor_motion.y * Vec3::Y;
             transform.translation += right + up;
         }
         if scroll.abs() > 0.0 {
-            projection.orthographic.scale -= scroll * projection.orthographic.scale * 0.1;
-            projection.orthographic.scale = f32::max(projection.orthographic.scale, 0.02);
+            proj.ortho.scale -= scroll * proj.ortho.scale * 0.1;
+            proj.ortho.scale = f32::max(proj.ortho.scale, 0.02);
         }
     } else {
         // perspective mode
@@ -261,7 +269,7 @@ fn supercamera_motion(
             // only check for upside down when orbiting started or ended this frame
             // if the camera is "upside" down, panning horizontally would be inverted, so invert the input to make it correct
             let up = transform.rotation * Vec3::Z;
-            projection.orbit_upside_down = up.z <= 0.0;
+            proj.orbit_upside_down = up.z <= 0.0;
         }
 
         let mut any = false;
@@ -271,7 +279,7 @@ fn supercamera_motion(
             let window_size = Vec2::new(window.width() as f32, window.height() as f32);
             let delta_x = {
                 let delta = cursor_motion.x / window_size.x * std::f32::consts::PI * 2.0;
-                if projection.orbit_upside_down { -delta } else { delta }
+                if proj.orbit_upside_down { -delta } else { delta }
             };
             let delta_y = -cursor_motion.y / window_size.y * std::f32::consts::PI;
             let yaw = Quat::from_rotation_z(-delta_x);
@@ -286,20 +294,20 @@ fn supercamera_motion(
 
             cursor_motion *=
                 Vec2::new(
-                    projection.perspective.fov * projection.perspective.aspect_ratio,
-                    projection.perspective.fov
+                    proj.persp.fov * proj.persp.aspect_ratio,
+                    proj.persp.fov
                 ) / window_size;
             // translate by local axes
             let right = transform.rotation * Vec3::X * -cursor_motion.x;
             let up = transform.rotation * Vec3::Y * -cursor_motion.y;
             // make panning proportional to distance away from center point
-            let translation = (right + up) * projection.orbit_radius;
-            projection.orbit_center += translation;
+            let translation = (right + up) * proj.orbit_radius;
+            proj.orbit_center += translation;
         } else if scroll.abs() > 0.0 {
             any = true;
-            projection.orbit_radius -= scroll * projection.orbit_radius * 0.2;
+            proj.orbit_radius -= scroll * proj.orbit_radius * 0.2;
             // dont allow zoom to reach zero or you get stuck
-            projection.orbit_radius = f32::max(projection.orbit_radius, 0.05);
+            proj.orbit_radius = f32::max(proj.orbit_radius, 0.05);
         }
 
         if any {
@@ -308,8 +316,8 @@ fn supercamera_motion(
             // child = z-offset
             let rot_matrix = Mat3::from_quat(transform.rotation);
             transform.translation =
-                projection.orbit_center
-                + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, projection.orbit_radius));
+                proj.orbit_center
+                + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, proj.orbit_radius));
         }
     }
 }
@@ -322,7 +330,7 @@ fn supercamera_setup(
     println!("supercamera_setup()");
     let mut cam = SuperCameraBundle::default();
     // todo: calculate camera scale based on window size and map size, etc.
-    cam.flexible_projection.orthographic.scale = 10.0;
+    cam.flexible_projection.ortho.scale = 10.0;
     let start_z = 20.;
     cam.flexible_projection.orbit_radius = start_z;
     cam.initial_position = Vec3::new(0., 0., start_z);
