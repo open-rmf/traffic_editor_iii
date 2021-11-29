@@ -270,11 +270,13 @@ fn supercamera_motion(
 
     mouse_ray.dir = mouse_far - mouse_near;
     mouse_ray.cam = mouse_near; //transform.translation;
+    /*
     println!("mouse_screen: {} {}, mouse ray: {:?} {:?}",
         mouse_screen_x,
         mouse_screen_y,
         mouse_ray.cam,
         mouse_ray.dir);
+    */
 
     if proj.mode == ProjectionMode::Orthographic {
         if cursor_motion.length_squared() > 0.0 {

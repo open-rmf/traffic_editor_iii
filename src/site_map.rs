@@ -210,8 +210,7 @@ impl SiteMap {
                     ..Default::default()
                 },
                 ..Default::default()
-            })
-            .insert_bundle(SelectableBundle {
+            }).insert_bundle(SelectableBundle {
                 is_selected: false,
             });
         }
@@ -303,7 +302,8 @@ pub fn initialize_site_map(
 pub fn mouse_ray_highlight_site_map(
     _mouse_ray: Res<MouseRay>,
     mut sm: ResMut<SiteMap>,
-    mut query: Query<(&mut SelectableBundle, &mut Handle<StandardMaterial>)>,
+    mut query: Query<(&mut Handle<StandardMaterial>)>,
+    //mut query: Query<(&SelectableBundle, &mut Handle<StandardMaterial>)>,
 ) {
     // find who is intersected by the mouse ray
     // println!("mouse ray: {:?} {:?}", mouse_ray.cam, mouse_ray.dir);
@@ -313,8 +313,11 @@ pub fn mouse_ray_highlight_site_map(
         return
     }
     println!("sm.frame_count = {}", sm.frame_count);
-    for (_selectable_bundle, mut material) in query.iter_mut() {
+    //for (_selectable_bundle, mut material) in query.iter_mut() {
+    for (mut material) in query.iter_mut() {
+        println!("found a material");
         // todo: some math here
+        /*
         if (sm.frame_count / 10) % 2 == 0 {
             *material = sm.materials.as_ref().unwrap().vertex_material.clone();
             println!("  set to vertex_material");
@@ -322,6 +325,7 @@ pub fn mouse_ray_highlight_site_map(
             *material = sm.materials.as_ref().unwrap().highlight_material.clone();
             println!("  set to highlight_material");
         }
+        */
     }
 }
 
