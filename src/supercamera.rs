@@ -172,12 +172,27 @@ impl Default for MouseLocation {
     }
 }
 
+pub struct MouseRay {
+    pub cam: Vec3,
+    pub dir: Vec3,
+}
+
+impl Default for MouseRay {
+    fn default() -> Self {
+        MouseRay {
+            cam: Vec3::ZERO,
+            dir: -Vec3::Z,
+        }
+    }
+}
+
 fn supercamera_motion(
     windows: Res<Windows>,
     mut ev_cursor_moved: EventReader<CursorMoved>,
     mut ev_scroll: EventReader<MouseWheel>,
     input_mouse: Res<Input<MouseButton>>,
     mut previous_mouse_location: ResMut<MouseLocation>,
+    mut mouse_ray: ResMut<MouseRay>,
     mut query: Query<(&mut Camera, &mut Transform, &mut FlexibleProjection, &Vec3)>,
 ) {
     let pan_button = MouseButton::Left;
@@ -207,7 +222,7 @@ fn supercamera_motion(
         #[cfg(target_arch = "wasm32")]
         {
             // scrolling in wasm is a different beast
-            scroll += 4. * ev.y / ev.y.abs();
+            scroll += 0.4 * ev.y / ev.y.abs();
         }
     }
 
@@ -218,11 +233,6 @@ fn supercamera_motion(
         //println!("scroll = {}", scroll);
     }
     */
-
-    #[cfg(target_arch = "wasm32")]
-    {
-      scroll = scroll * 0.1; // not sure why, but web scrolling seems SO FAST
-    }
 
     let (
         _camera,
@@ -243,13 +253,30 @@ fn supercamera_motion(
         */
     }
 
-    if proj.mode == ProjectionMode::Orthographic {
-        let window = windows.get_primary().unwrap();
-        let window_size = Vec2::new(
-            window.width() as f32,
-            window.height() as f32);
-        let aspect_ratio = window_size[0] / window_size[1];
+    let window = windows.get_primary().unwrap();
+    let window_size = Vec2::new(
+        window.width() as f32,
+        window.height() as f32);
+    let aspect_ratio = window_size[0] / window_size[1];
 
+    let mouse_screen_x = last_pos.x / window_size.x * aspect_ratio * 2. - aspect_ratio;
+    let mouse_screen_y = last_pos.y / window_size.y * 2. - 1.;
+    let screen_to_world: Mat4 = transform.compute_matrix() * proj.get_projection_matrix().inverse();
+    // todo: invert near/far ?
+    let mouse_near = screen_to_world.project_point3(
+            Vec3::new(mouse_screen_x, mouse_screen_y, -1.));
+    let mouse_far = screen_to_world.project_point3(
+            Vec3::new(mouse_screen_x, mouse_screen_y, 1.));
+
+    mouse_ray.dir = mouse_far - mouse_near;
+    mouse_ray.cam = mouse_near; //transform.translation;
+    println!("mouse_screen: {} {}, mouse ray: {:?} {:?}",
+        mouse_screen_x,
+        mouse_screen_y,
+        mouse_ray.cam,
+        mouse_ray.dir);
+
+    if proj.mode == ProjectionMode::Orthographic {
         if cursor_motion.length_squared() > 0.0 {
             cursor_motion *= 2. / window_size * Vec2::new(
                 proj.ortho.scale * aspect_ratio,
@@ -344,6 +371,7 @@ pub struct SuperCameraPlugin;
 impl Plugin for SuperCameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MouseLocation>()
+           .init_resource::<MouseRay>()
            .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
            .add_startup_system(supercamera_setup)
            .add_system(supercamera_motion)

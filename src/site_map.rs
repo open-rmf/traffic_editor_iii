@@ -1,4 +1,6 @@
 use bevy::{
+    asset::Handle,
+    ecs::bundle::Bundle,
     ecs::prelude::*,
     math::{Quat, Vec2, Vec3},
     pbr2::{PbrBundle, StandardMaterial},
@@ -8,6 +10,7 @@ use bevy::{
         mesh::{shape, Mesh},
     },
 };
+use bevy::ecs as bevy_ecs;
 
 use std::{
     env,
@@ -20,6 +23,7 @@ use serde_yaml;
 // for now, just hack it up and toss the office-demo YAML into a big string
 use crate::demo_world::demo_office;
 
+use crate::supercamera::MouseRay;
 
 pub struct Vertex {
     x: f64,
@@ -37,12 +41,33 @@ pub struct Wall {
     end: usize,
 }
 
+#[derive(Bundle, Default)]
+pub struct SelectableBundle {
+    is_selected: bool,
+}
+
+struct SiteMapMaterials {
+    vertex_material: Handle<StandardMaterial>,
+    highlight_material: Handle<StandardMaterial>,
+}
+
+impl SiteMapMaterials {
+    fn create(materials: &mut Assets<StandardMaterial>) -> Self {
+        SiteMapMaterials {
+            vertex_material: materials.add(Color::rgb(0.4, 0.7, 0.6).into()),
+            highlight_material: materials.add(Color::rgb(0.9, 0.6, 0.6).into()),
+        }
+    }
+}
+
 pub struct SiteMap {
     filename: String,
     site_name: String,
     vertices: Vec<Vertex>,
     lanes: Vec<Lane>,
     walls: Vec<Wall>,
+    materials: Option<SiteMapMaterials>,
+    frame_count: u32,
 }
 
 impl Default for SiteMap {
@@ -53,6 +78,8 @@ impl Default for SiteMap {
             vertices: Vec::new(),
             lanes: Vec::new(),
             walls: Vec::new(),
+            materials: None,
+            frame_count: 0,
         }
     }
 }
@@ -183,6 +210,9 @@ impl SiteMap {
                     ..Default::default()
                 },
                 ..Default::default()
+            })
+            .insert_bundle(SelectableBundle {
+                is_selected: false,
             });
         }
 
@@ -255,18 +285,43 @@ pub fn initialize_site_map(
     mut sm: ResMut<SiteMap>,
     commands: Commands,
     meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     let args: Vec<String> = env::args().collect();
     if args.len() >= 2 {
         println!("parsing...");
         sm.load(args[1].clone());
-        sm.spawn(commands, meshes, materials, asset_server);
         println!("parsing complete");
     } else {
         sm.load_demo();
-        sm.spawn(commands, meshes, materials, asset_server);
+    }
+    sm.materials = Some(SiteMapMaterials::create(&mut materials));
+    sm.spawn(commands, meshes, materials, asset_server);
+}
+
+pub fn mouse_ray_highlight_site_map(
+    _mouse_ray: Res<MouseRay>,
+    mut sm: ResMut<SiteMap>,
+    mut query: Query<(&mut SelectableBundle, &mut Handle<StandardMaterial>)>,
+) {
+    // find who is intersected by the mouse ray
+    // println!("mouse ray: {:?} {:?}", mouse_ray.cam, mouse_ray.dir);
+    sm.frame_count += 1;
+    if sm.materials.is_none() {
+        println!("sm.materials is none");
+        return
+    }
+    println!("sm.frame_count = {}", sm.frame_count);
+    for (_selectable_bundle, mut material) in query.iter_mut() {
+        // todo: some math here
+        if (sm.frame_count / 10) % 2 == 0 {
+            *material = sm.materials.as_ref().unwrap().vertex_material.clone();
+            println!("  set to vertex_material");
+        } else {
+            *material = sm.materials.as_ref().unwrap().highlight_material.clone();
+            println!("  set to highlight_material");
+        }
     }
 }
 
@@ -276,6 +331,7 @@ pub struct SiteMapPlugin;
 impl Plugin for SiteMapPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SiteMap>()
-           .add_startup_system(initialize_site_map);
+           .add_startup_system(initialize_site_map)
+           .add_system(mouse_ray_highlight_site_map);
     }
 }
