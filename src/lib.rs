@@ -1,5 +1,5 @@
 use bevy::{
-    // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     ecs::prelude::*,
     input::Input,
     input::keyboard::KeyCode,
@@ -218,8 +218,8 @@ pub fn run() {
             size: 2048
         })
         .add_plugins(PipelinedDefaultPlugins)
-        //.add_plugin(FrameTimeDiagnosticsPlugin::default())
-        //.add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(LogDiagnosticsPlugin::default())
         //.insert_resource(Msaa { samples: 4})
         .add_plugin(SuperCameraPlugin)
         .add_startup_system(setup)

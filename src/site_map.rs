@@ -41,8 +41,8 @@ pub struct Wall {
     end: usize,
 }
 
-#[derive(Bundle, Default)]
-pub struct SelectableBundle {
+//#[derive(Bundle, Default)]
+pub struct Selectable {
     is_selected: bool,
 }
 
@@ -210,7 +210,7 @@ impl SiteMap {
                     ..Default::default()
                 },
                 ..Default::default()
-            }).insert_bundle(SelectableBundle {
+            }).insert(Selectable {
                 is_selected: false,
             });
         }
@@ -302,7 +302,7 @@ pub fn initialize_site_map(
 pub fn mouse_ray_highlight_site_map(
     _mouse_ray: Res<MouseRay>,
     mut sm: ResMut<SiteMap>,
-    mut query: Query<(&mut Handle<StandardMaterial>)>,
+    mut query: Query<(&Selectable, &mut Handle<StandardMaterial>)>,
     //mut query: Query<(&SelectableBundle, &mut Handle<StandardMaterial>)>,
 ) {
     // find who is intersected by the mouse ray
@@ -312,20 +312,15 @@ pub fn mouse_ray_highlight_site_map(
         println!("sm.materials is none");
         return
     }
-    println!("sm.frame_count = {}", sm.frame_count);
+    // println!("sm.frame_count = {}", sm.frame_count);
     //for (_selectable_bundle, mut material) in query.iter_mut() {
-    for (mut material) in query.iter_mut() {
-        println!("found a material");
+    for (_selectable, mut material) in query.iter_mut() {
         // todo: some math here
-        /*
         if (sm.frame_count / 10) % 2 == 0 {
             *material = sm.materials.as_ref().unwrap().vertex_material.clone();
-            println!("  set to vertex_material");
         } else {
             *material = sm.materials.as_ref().unwrap().highlight_material.clone();
-            println!("  set to highlight_material");
         }
-        */
     }
 }
 
