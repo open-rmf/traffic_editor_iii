@@ -1,3 +1,9 @@
+# THIS REPO IS NOW ARCHIVED
+
+Development has moved to https://github.com/open-rmf/rmf_site
+
+For historical continuity, the contents of this repo will be left intact and archived.
+
 # Traffic Editor III
 Welcome to Traffic Editor III.
 
